@@ -1,9 +1,5 @@
-
-
 """
-PART 2 
-COPIED OVER LECTURE CODE FROM 6/4
-
+Part 2: Interpreter for the Extended Lambda Calculus (Task 2)
 """
 
 import sys
@@ -227,15 +223,9 @@ term_cmp = lambda a1, a2: term_opr("cmp", [a1, a2])
 
 ##################################################################
 
-# #extern
-# fun
-# term_eval00(tm0: term): tval
-# #extern
-# fun
-# term_eval01(tm0: term, env: xenv): tval
 
 def term_eval00(tm0):
-    return term_eval01(tm0, xenv_nil())
+    return term_eval01(tm0, builtins_env())
 
 ##################################################################
 
@@ -340,6 +330,13 @@ def term_eval01(tm0, env):
             assert tv1.ctag == "TVint"
             assert tv2.ctag == "TVint"
             return tval_btf(tv1.arg1 >= tv2.arg1)
+        if (pnm == "&&"):
+            assert len(ags) == 2
+            tv1 = term_eval01(ags[0], env)
+            tv2 = term_eval01(ags[1], env)
+            assert tv1.ctag == "TVbtf"
+            assert tv2.ctag == "TVbtf"
+            return tval_btf(tv1.arg1 and tv2.arg1)
         if (pnm == "!="):
             assert len(ags) == 2
             tv1 = term_eval01(ags[0], env)
@@ -347,6 +344,11 @@ def term_eval01(tm0, env):
             assert tv1.ctag == "TVint"
             assert tv2.ctag == "TVint"
             return tval_btf(tv1.arg1 != tv2.arg1)
+        if (pnm == "print_board"):
+            assert len(ags) == 1
+            tv_bd = term_eval01(ags[0], env)
+            print_board(tv_bd)
+            return tval_int(0)
         raise TypeError(pnm) # HX-2025-06-03: unsupported!
     if (tm0.ctag == "TMapp"):
         tm1 = tm0.arg1
@@ -414,34 +416,52 @@ btf_f = term_btf(False)
 
 ##################################################################
 
-print("eval(int_1) = " + str(term_eval00(int_1)))
-print("eval(btf_t) = " + str(term_eval00(btf_t)))
-print("eval(int_1 + int_1) = " + str(term_eval00(term_add(int_1, int_1))))
-print("eval(int_1 - int_1) = " + str(term_eval00(term_sub(int_1, int_1))))
-print("eval(int_1 <= int_1) = " + str(term_eval00(term_lte(int_1, int_1))))
+# Builtin environment providing primitive functions like [abs]
+def builtins_env():
+    env = xenv_nil()
+    x = term_var("x")
+    abs_body = TMif0(
+        TMopr("<", [x, TMint(0)]),
+        TMopr("-", [TMint(0), x]),
+        x,
+    )
+    abs_val = term_eval01(TMlam("x", abs_body), env)
+    env = xenv_cons("abs", abs_val, env)
+    return env
+
+def tup_to_list(tv, n):
+    res = []
+    cur = tv
+    for _ in range(n):
+        assert cur.ctag == "TVtup"
+        assert cur.arg1.ctag == "TVint"
+        res.append(cur.arg1.arg1)
+        cur = cur.arg2
+    return res
+
+def print_board(tv_bd):
+    cols = tup_to_list(tv_bd, 8)
+    for r in range(8):
+        j = cols[r]
+        line = ". " * j + "Q " + ". " * (8 - j - 1)
+        print(line)
+    print()
+
+##################################################################
+
+# print("eval(int_1) = " + str(term_eval00(int_1)))
+# print("eval(btf_t) = " + str(term_eval00(btf_t)))
+# print("eval(int_1 + int_1) = " + str(term_eval00(term_add(int_1, int_1))))
+# print("eval(int_1 - int_1) = " + str(term_eval00(term_sub(int_1, int_1))))
+# print("eval(int_1 <= int_1) = " + str(term_eval00(term_lte(int_1, int_1))))
 
 ##################################################################
 
 term_dbl = term_lam("x", term_add(var_x, var_x))
-print("eval(term_dbl(int_1)) = " + str(term_eval00(term_app(term_dbl, int_1))))
+# print("eval(term_dbl(int_1)) = " + str(term_eval00(term_app(term_dbl, int_1))))
 
 ##################################################################
 
-int_0 = term_int( 1 )
-int_1 = term_int( 1 )
-var_f = term_var("f")
-var_n = term_var("n")
-int_3 = term_int(3)
-int_5 = term_int(5)
-int_10 = term_int(10)
-term_fact = \
-  term_fix("f", "n", \
-    term_if0(term_lte(var_n, int_0), \
-      int_1, \
-      term_mul(var_n, term_app(var_f, term_sub(var_n, int_1)))))
-print("eval(term_fact(int_3)) = " + str(term_eval00(term_app(term_fact, int_3))))
-print("eval(term_fact(int_5)) = " + str(term_eval00(term_app(term_fact, int_5))))
-print("eval(term_fact(int_10)) = " + str(term_eval00(term_app(term_fact, int_10))))
 
 ##################################################################
 
@@ -471,8 +491,8 @@ def chnum_toint(chnum):
     res = term_eval00(term_app(term_app(chnum, term_suc), int_0))
     assert res.ctag == "TVint"
     return res.arg1
-print("CHNUM3 = " + str(CHNUM3))
-print("CHNUM3 = " + str(chnum_toint(CHNUM3)))
+# print("CHNUM3 = " + str(CHNUM3))
+# print("CHNUM3 = " + str(chnum_toint(CHNUM3)))
 
 def int_tochnum(n0):
     assert n0 >= 0
@@ -482,7 +502,7 @@ def int_tochnum(n0):
         res = term_app(var_f, res)
     return term_lam("f", term_lam("x", res))
 
-print("CHNUM1000 = " + str(chnum_toint(int_tochnum(1000))))
+# print("CHNUM1000 = " + str(chnum_toint(int_tochnum(1000))))
 
 ##################################################################
 
@@ -494,6 +514,11 @@ var_x = term_var("x")
 var_y = term_var("y")
 chtru = term_lam("x", term_lam("y", var_x)) # for representing true
 chfls = term_lam("x", term_lam("y", var_y)) # for representing false
+
+def church_if0(tm1, tm2, tm3):
+    return \
+      term_app(term_app(
+        term_app(tm1, term_lam("", tm2)), term_lam("", tm3)), chtru)
 
 ##################################################################
 #
@@ -507,7 +532,7 @@ chnum_suc = \
 #
 
 CHNUM4 = term_app(chnum_suc, CHNUM3)
-print("CHNUM4 = " + str(chnum_toint(CHNUM4)))
+# print("CHNUM4 = " + str(chnum_toint(CHNUM4)))
 
 # def myadd(x, y):
 #     if x==0:
@@ -532,7 +557,7 @@ chnum_add = \
 CHNUM7 = \
   term_app(\
     term_app(chnum_add, CHNUM3), CHNUM4)
-print("CHNUM7 = " + str(chnum_toint(CHNUM7)))
+# print("CHNUM7 = " + str(chnum_toint(CHNUM7)))
 
 # chnum_mul =
 # lam m.lam n.(lam f.lam x.m(n(f))(x))
@@ -544,7 +569,7 @@ chnum_mul = \
 CHNUM49 = \
   term_app(\
     term_app(chnum_mul, CHNUM7), CHNUM7)
-print("CHNUM49 = " + str(chnum_toint(CHNUM49)))
+# print("CHNUM49 = " + str(chnum_toint(CHNUM49)))
 
 # HX-2025-06-04:
 # This is what [pre_helper] does:
@@ -566,15 +591,15 @@ def f_chnum_pre():
 chnum_pre = f_chnum_pre()
 
 CHNUM0 = term_app(chnum_pre, CHNUM0)
-print("CHNUM0 = " + str(chnum_toint(CHNUM0)))
+# print("CHNUM0 = " + str(chnum_toint(CHNUM0)))
 CHNUM0 = term_app(chnum_pre, CHNUM1)
-print("CHNUM0 = " + str(chnum_toint(CHNUM0)))
+# print("CHNUM0 = " + str(chnum_toint(CHNUM0)))
 CHNUM1 = term_app(chnum_pre, CHNUM2)
-print("CHNUM1 = " + str(chnum_toint(CHNUM1)))
+# print("CHNUM1 = " + str(chnum_toint(CHNUM1)))
 CHNUM6 = term_app(chnum_pre, CHNUM7)
-print("CHNUM6 = " + str(chnum_toint(CHNUM6)))
+# print("CHNUM6 = " + str(chnum_toint(CHNUM6)))
 CHNUM5 = term_app(chnum_pre, CHNUM6)
-print("CHNUM5 = " + str(chnum_toint(CHNUM5)))
+# print("CHNUM5 = " + str(chnum_toint(CHNUM5)))
 #
 # HX-2025-06-05:
 # This one takes forever!!!
@@ -586,12 +611,7 @@ chnum_gtz = \
   term_lam("n", \
     term_app(term_app(var_n, term_lam("", chtru)), chfls))
 
-def term_if0(tm1, tm2, tm3):
-    return \
-      term_app(term_app(
-        term_app(tm1, term_lam("", tm2)), term_lam("", tm3)), chtru)
-
-def term_fix(f00, x01, tmx):
+def lambda_fix(f00, x01, tmx):
     f = term_var("f")
     x = term_var("x")
     y = term_var("y")
@@ -602,15 +622,15 @@ def term_fix(f00, x01, tmx):
     return term_app(Yval, term_lam(f00, term_lam(x01, tmx)))
 
 chnum_fact = \
-  term_fix("f", "n", \
-    term_if0(term_app(chnum_gtz, var_n), \
+  lambda_fix("f", "n", \
+    church_if0(term_app(chnum_gtz, var_n), \
       term_app(term_app(chnum_mul, var_n), \
         term_app(var_f, term_app(chnum_pre, var_n))), CHNUM1))
 
-print("chnum_fact(0) = " + str(chnum_toint(term_app(chnum_fact, CHNUM0))))
-print("chnum_fact(3) = " + str(chnum_toint(term_app(chnum_fact, CHNUM3))))
-print("chnum_fact(5) = " + str(chnum_toint(term_app(chnum_fact, CHNUM5))))
-print("chnum_fact(7) = " + str(chnum_toint(term_app(chnum_fact, CHNUM7))))
+# print("chnum_fact(0) = " + str(chnum_toint(term_app(chnum_fact, CHNUM0))))
+# print("chnum_fact(3) = " + str(chnum_toint(term_app(chnum_fact, CHNUM3))))
+# print("chnum_fact(5) = " + str(chnum_toint(term_app(chnum_fact, CHNUM5))))
+# print("chnum_fact(7) = " + str(chnum_toint(term_app(chnum_fact, CHNUM7))))
 
 ##################################################################
 # end of [CS391-2025-Summer/lectures/lecture-06-03/lambda1.py]
@@ -634,258 +654,137 @@ TMtup = term_tup
 TMfst = term_fst
 TMsnd = term_snd
 TMlet = term_let
-TMBtf = tval_btf  # Only needed if you use it in type annotations
-TMBoard = "TMBoard"  # Placeholder, optional
-
-
-
-
-'''
-fun safety_test1(i0, j0, i, j) =
-  j0 != j andalso abs(i0 - i) != abs(j0 - j)
-'''
-
-safety_test1 = TMlam("i0", TMint,
-TMlam("j0", TMint,
-TMlam("i",  TMint,
-TMlam("j",  TMint,
-  TMopr("&&", [
-    TMopr("!=", [TMvar("j0"), TMvar("j")]),
-    TMopr("!=", [
-      TMapp(TMvar("abs"), TMopr("-", [TMvar("i0"), TMvar("i")])),
-      TMapp(TMvar("abs"), TMopr("-", [TMvar("j0"), TMvar("j")]))
-    ])
-  ])
-))))
-
-'''
-fun safety_test2(i0, j0, bd, i) =
-  if i >= 0 then
-    if safety_test1(i0, j0, i, board_get(bd, i))
-      then safety_test2(i0, j0, bd, i-1)
-      else false
-  else true
-
-'''
-safety_test2 = TMfix("safety_test2", "i", TMint, TMBtf,  # fix safety_test2(i)
-TMlam("i0", TMint,
-TMlam("j0", TMint,
-TMlam("bd", TMBoard,  # placeholder for board type (e.g. nested TMtup of 8 ints)
-TMlam("i", TMint,
-  TMif0(
-    TMopr(">=", [TMvar("i"), TMint(0)]),
-    TMif0(
-      TMapp(TMapp(TMapp(TMapp(TMvar("safety_test1"), TMvar("i0")), TMvar("j0")), TMvar("i")),
-            TMapp(TMvar("board_get"), TMtup(TMvar("bd"), TMvar("i")))),
-      # then branch
-      TMapp(TMapp(TMapp(TMapp(TMvar("safety_test2"), TMvar("i0")), TMvar("j0")), TMvar("bd")),
-            TMopr("-", [TMvar("i"), TMint(1)])),
-      # else branch
-      TMbtf(False)
-    ),
-    # else (i < 0)
-    TMbtf(True)
-  )
-)))))
-
-'''
-fun board_get(bd: int8, i: int): int =
-  if i = 0 then bd.0
-  else if i = 1 then bd.1
-  ...
-  else ~1
-
-'''
-
-board_get = TMlam("bd", TMBoard,
-  TMlam("i", TMint,
-    TMif0(TMopr("=", [TMvar("i"), TMint(0)]),
-      TMfst(TMvar("bd")),
-      TMif0(TMopr("=", [TMvar("i"), TMint(1)]),
-        TMfst(TMsnd(TMvar("bd"))),
-        TMif0(TMopr("=", [TMvar("i"), TMint(2)]),
-          TMfst(TMsnd(TMsnd(TMvar("bd")))),
-          TMif0(TMopr("=", [TMvar("i"), TMint(3)]),
-            TMfst(TMsnd(TMsnd(TMsnd(TMvar("bd"))))),
-            TMif0(TMopr("=", [TMvar("i"), TMint(4)]),
-              TMfst(TMsnd(TMsnd(TMsnd(TMsnd(TMvar("bd")))))),
-              TMif0(TMopr("=", [TMvar("i"), TMint(5)]),
-                TMfst(TMsnd(TMsnd(TMsnd(TMsnd(TMsnd(TMvar("bd"))))))),
-                TMif0(TMopr("=", [TMvar("i"), TMint(6)]),
-                  TMfst(TMsnd(TMsnd(TMsnd(TMsnd(TMsnd(TMsnd(TMvar("bd")))))))),
-                  TMif0(TMopr("=", [TMvar("i"), TMint(7)]),
-                    TMfst(TMsnd(TMsnd(TMsnd(TMsnd(TMsnd(TMsnd(TMsnd(TMvar("bd"))))))))),
-                    TMint(-1)
-                  )
-                )
-              )
-            )
-          )
-        )
-      )
-    )
-  )
-)
-
-
-
-'''
-fun board_set(bd, i, j): int8 = let
-  val (x0, x1, ..., x7) = bd
-in
-  if i = 0 then (j, x1, ..., x7)
-  else if i = 1 then (x0, j, ..., x7)
-  ...
-  else bd
-
-'''
-
-board_set = TMlam("bd", TMBoard,
-    TMlam("i", TMint,
-        TMlam("j", TMint,
-            TMlet("x0", TMfst(TMvar("bd")),
-            TMlet("x1", TMfst(TMsnd(TMvar("bd"))),
-            TMlet("x2", TMfst(TMsnd(TMsnd(TMvar("bd")))),
-            TMlet("x3", TMfst(TMsnd(TMsnd(TMsnd(TMvar("bd"))))),
-            TMlet("x4", TMfst(TMsnd(TMsnd(TMsnd(TMsnd(TMvar("bd")))))),
-            TMlet("x5", TMfst(TMsnd(TMsnd(TMsnd(TMsnd(TMsnd(TMvar("bd"))))))),
-            TMlet("x6", TMfst(TMsnd(TMsnd(TMsnd(TMsnd(TMsnd(TMsnd(TMvar("bd")))))))),
-            TMlet("x7", TMfst(TMsnd(TMsnd(TMsnd(TMsnd(TMsnd(TMsnd(TMsnd(TMvar("bd"))))))))),
-            TMif0(TMopr("=", [TMvar("i"), TMint(0)]),
-                TMtup(TMvar("j"),
-                TMtup(TMvar("x1"),
-                TMtup(TMvar("x2"),
-                TMtup(TMvar("x3"),
-                TMtup(TMvar("x4"),
-                TMtup(TMvar("x5"),
-                TMtup(TMvar("x6"), TMvar("x7"))))))))),
-            TMif0(TMopr("=", [TMvar("i"), TMint(1)]),
-                TMtup(TMvar("x0"),
-                TMtup(TMvar("j"),
-                TMtup(TMvar("x2"),
-                TMtup(TMvar("x3"),
-                TMtup(TMvar("x4"),
-                TMtup(TMvar("x5"),
-                TMtup(TMvar("x6"), TMvar("x7"))))))))),
-            TMif0(TMopr("=", [TMvar("i"), TMint(2)]),
-                TMtup(TMvar("x0"),
-                TMtup(TMvar("x1"),
-                TMtup(TMvar("j"),
-                TMtup(TMvar("x3"),
-                TMtup(TMvar("x4"),
-                TMtup(TMvar("x5"),
-                TMtup(TMvar("x6"), TMvar("x7"))))))))),
-            TMif0(TMopr("=", [TMvar("i"), TMint(3)]),
-                TMtup(TMvar("x0"),
-                TMtup(TMvar("x1"),
-                TMtup(TMvar("x2"),
-                TMtup(TMvar("j"),
-                TMtup(TMvar("x4"),
-                TMtup(TMvar("x5"),
-                TMtup(TMvar("x6"), TMvar("x7"))))))))),
-            TMif0(TMopr("=", [TMvar("i"), TMint(4)]),
-                TMtup(TMvar("x0"),
-                TMtup(TMvar("x1"),
-                TMtup(TMvar("x2"),
-                TMtup(TMvar("x3"),
-                TMtup(TMvar("j"),
-                TMtup(TMvar("x5"),
-                TMtup(TMvar("x6"), TMvar("x7"))))))))),
-            TMif0(TMopr("=", [TMvar("i"), TMint(5)]),
-                TMtup(TMvar("x0"),
-                TMtup(TMvar("x1"),
-                TMtup(TMvar("x2"),
-                TMtup(TMvar("x3"),
-                TMtup(TMvar("x4"),
-                TMtup(TMvar("j"),
-                TMtup(TMvar("x6"), TMvar("x7"))))))))),
-            TMif0(TMopr("=", [TMvar("i"), TMint(6)]),
-                TMtup(TMvar("x0"),
-                TMtup(TMvar("x1"),
-                TMtup(TMvar("x2"),
-                TMtup(TMvar("x3"),
-                TMtup(TMvar("x4"),
-                TMtup(TMvar("x5"),
-                TMtup(TMvar("j"), TMvar("x7"))))))))),
-            TMif0(TMopr("=", [TMvar("i"), TMint(7)]),
-                TMtup(TMvar("x0"),
-                TMtup(TMvar("x1"),
-                TMtup(TMvar("x2"),
-                TMtup(TMvar("x3"),
-                TMtup(TMvar("x4"),
-                TMtup(TMvar("x5"),
-                TMtup(TMvar("x6"), TMvar("j")))))))),
-            TMvar("bd")
-            ))))))))))
-        )
-    )
-
-
-
-
+TMBtf = tval_btf 
 """
-fun search(bd: int8, i: int, j: int, nsol: int): int =
-  if j < N then
-    if safety_test2(i, j, bd, i-1) then
-      let val bd1 = board_set(bd, i, j) in
-        if i+1 = N then
-          (* found a solution *)
-          print_board(bd1); search(bd, i, j+1, nsol+1)
-        else
-          search(bd1, i+1, 0, nsol)
-      end
-    else
-      search(bd, i, j+1, nsol)
-  else
-    if i > 0 then
-      search(bd, i-1, board_get(bd, i-1) + 1, nsol)
-    else
-      nsol
-
+Part 1: Eight Queens Puzzle encoded in LAMBDA (Task 1)
 """
 
-search = TMfix("search", "j", TMint, TMint,  # we fix on j
-TMlam("bd", TMBoard,
-TMlam("i", TMint,
-TMlam("j", TMint,
-TMlam("nsol", TMint,
+def proj(bd, idx):
+    t = bd
+    for _ in range(idx):
+        t = TMsnd(t)
+    if idx == 7:
+        return t
+    else:
+        return TMfst(t)
 
-  # Outer condition: if j < 8
-  TMif0(TMopr("<", [TMvar("j"), TMint(8)]),
+def board_tuple(elems):
+    assert len(elems) == 8
+    t = elems[7]
+    for k in range(6, -1, -1):
+        t = TMtup(elems[k], t)
+    return t
 
-    # THEN (j < 8)
-    TMif0(
-      TMapp(TMapp(TMapp(TMapp(TMvar("safety_test2"),
-        TMvar("i")), TMvar("j")), TMvar("bd")),
-        TMopr("-", [TMvar("i"), TMint(1)])
-      ),
+def make_board_get():
+    bd = TMvar("bd")
+    i = TMvar("i")
+    body = TMint(-1)
+    for idx in reversed(range(8)):
+        body = TMif0(TMopr("=", [i, TMint(idx)]), proj(bd, idx), body)
+    return TMlam("bd", TMlam("i", body))
 
-      # THEN: bd1 = board_set(...), if i+1 = 8 → solution
-      TMlet("bd1", TMapp(TMapp(TMapp(TMvar("board_set"), TMvar("bd")), TMvar("i")), TMvar("j")),
-      TMif0(TMopr("=", [TMopr("+", [TMvar("i"), TMint(1)]), TMint(8)]),
-        # Base case: found a solution
-        TMapp(TMapp(TMapp(TMapp(TMvar("search"), TMvar("bd")), TMvar("i")), TMopr("+", [TMvar("j"), TMint(1)])), TMopr("+", [TMvar("nsol"), TMint(1)])),
-        # Else: recurse with next row
-        TMapp(TMapp(TMapp(TMapp(TMvar("search"), TMvar("bd1")), TMopr("+", [TMvar("i"), TMint(1)])), TMint(0)), TMvar("nsol"))
-      )),
+board_get = make_board_get()
 
-      # ELSE: safety_test2 failed, try next column
-      TMapp(TMapp(TMapp(TMapp(TMvar("search"), TMvar("bd")), TMvar("i")), TMopr("+", [TMvar("j"), TMint(1)])), TMvar("nsol"))
-    ),
+def make_board_set():
+    bd = TMvar("bd")
+    i = TMvar("i")
+    j = TMvar("j")
+    vals = [proj(bd, k) for k in range(8)]
+    body = board_tuple(vals)
+    for idx in reversed(range(8)):
+        temp = vals.copy()
+        temp[idx] = j
+        body = TMif0(TMopr("=", [i, TMint(idx)]), board_tuple(temp), body)
+    return TMlam("bd", TMlam("i", TMlam("j", body)))
 
-    # ELSE: j >= 8
-    TMif0(TMopr(">", [TMvar("i"), TMint(0)]),
-      # Backtrack
-      TMapp(TMapp(TMapp(TMapp(TMvar("search"),
-        TMvar("bd")),
-        TMopr("-", [TMvar("i"), TMint(1)])),
-        TMopr("+", [TMapp(TMapp(TMvar("board_get"), TMvar("bd")), TMopr("-", [TMvar("i"), TMint(1)])), TMint(1)])),
-        TMvar("nsol")
-      ),
-      # Return solution count
-      TMvar("nsol")
+board_set = make_board_set()
+
+safety_test1 = TMlam("i0",
+    TMlam("j0",
+    TMlam("i",
+    TMlam("j",
+        TMopr("&&", [
+            TMopr("!=", [TMvar("j0"), TMvar("j")]),
+            TMopr("!=", [
+                TMapp(TMvar("abs"), TMopr("-", [TMvar("i0"), TMvar("i")])),
+                TMapp(TMvar("abs"), TMopr("-", [TMvar("j0"), TMvar("j")]))
+            ])
+        ])
+    ))))
+
+def make_safety_test2():
+    i0 = TMvar("i0")
+    j0 = TMvar("j0")
+    bd = TMvar("bd")
+    i = TMvar("i")
+    f = TMvar("safety_test2")
+    body = TMif0(
+        TMopr(">=", [i, TMint(0)]),
+        TMif0(
+            TMapp(TMapp(TMapp(TMapp(safety_test1, i0), j0), i),
+                  TMapp(TMapp(board_get, bd), i)),
+            TMapp(TMapp(TMapp(TMapp(f, i0), j0), bd),
+                  TMopr("-", [i, TMint(1)])),
+            TMbtf(False)
+        ),
+        TMbtf(True)
     )
-  )
-)))))
+    fix = TMfix("safety_test2", "i", body)
+    return TMlam("i0", TMlam("j0", TMlam("bd", fix)))
 
+safety_test2 = make_safety_test2()
 
+def make_search():
+    bd = TMvar("bd")
+    i = TMvar("i")
+    j = TMvar("j")
+    nsol = TMvar("nsol")
+    f = TMvar("search")
+
+    test = TMapp(TMapp(TMapp(TMapp(safety_test2, i), j), bd),
+                 TMopr("-", [i, TMint(1)]))
+
+    bd1 = TMapp(TMapp(TMapp(board_set, bd), i), j)
+
+    then_branch = TMlet("bd1", bd1,
+        TMif0(TMopr("=", [TMopr("+", [i, TMint(1)]), TMint(8)]),
+            TMlet("_", TMopr("print_board", [TMvar("bd1")]),
+                TMapp(TMapp(TMapp(TMapp(f, bd), i), TMopr("+", [j, TMint(1)])),
+                     TMopr("+", [nsol, TMint(1)]))
+            ),
+            TMapp(TMapp(TMapp(TMapp(f, TMvar("bd1")), TMopr("+", [i, TMint(1)])), TMint(0)), nsol)
+        ))
+
+    when_j_lt = TMif0(test, then_branch,
+        TMapp(TMapp(TMapp(TMapp(f, bd), i), TMopr("+", [j, TMint(1)])), nsol))
+
+    else_branch = TMif0(TMopr(">", [i, TMint(0)]),
+        TMapp(TMapp(TMapp(TMapp(f, bd), TMopr("-", [i, TMint(1)])),
+              TMopr("+", [TMapp(TMapp(board_get, bd), TMopr("-", [i, TMint(1)])), TMint(1)])), nsol),
+        nsol)
+
+    body = TMif0(TMopr("<", [j, TMint(8)]), when_j_lt, else_branch)
+
+    fix = TMfix("search", "bd", TMlam("i", TMlam("j", TMlam("nsol", body))))
+    return fix
+
+search = make_search()
+
+def empty_board():
+    xs = [TMint(0) for _ in range(8)]
+    return board_tuple(xs)
+
+initial_board = empty_board()
+
+solver = TMlet("board_get", board_get,
+    TMlet("board_set", board_set,
+    TMlet("safety_test1", safety_test1,
+    TMlet("safety_test2", safety_test2,
+    TMlet("search", search,
+        TMapp(TMapp(TMapp(TMapp(TMvar("search"), initial_board), TMint(0)), TMint(0)), TMint(0))
+    )))))
+
+if __name__ == "__main__":
+    print("Starting solver...\n")
+    result = term_eval00(solver)
+    print("\nFinished. Number of solutions found:", result.arg1)
