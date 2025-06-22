@@ -414,5 +414,147 @@ CHNUM3 = \
 print("tpck(CHNUM3) = " + str(term_tpck00(CHNUM3)))
 
 ##################################################################
-# end of [CS391-2025-Summer/lectures/lecture-06-03/lambda2.py]
+
+# datatype treg =
+# TREG of (strn(*prfx*), sint(*sffx*))
+
+class treg:
+    prfx = ""
+    ntmp = 100
+    nfun = 100
+    def __init__(self, prfx, sffx):
+        self.prfx = prfx; self.sffx = sffx
+    def __str__(self):
+        return ("treg(" + self.prfx + str(self.sffx) + ")")
+# end-of-class(treg)
+
+def targ_new():
+    return treg("arg", 0)
+def ttmp_new():
+    treg.ntmp += 1
+    return treg("tmp", treg.ntmp)
+def tfun_new():
+    treg.nfun += 1
+    return treg("fun", treg.nfun)
+
+arg0 = targ_new()
+tmp1 = ttmp_new()
+tmp2 = ttmp_new()
+fun1 = tfun_new()
+fun2 = tfun_new()
+print("arg0 = " + str(arg0))
+print("tmp1 = " + str(tmp1))
+print("tmp2 = " + str(tmp2))
+print("fun1 = " + str(fun1))
+print("fun2 = " + str(fun2))
+
+##################################################################
+
+# datatype tval =
+# | TVALint of sint
+# | TVALbtf of bool
+# | TVALreg of treg
+
+# datatype tins =
+# | TINSmov of (treg(*dst*), tval(*src*))
+# | TINSapp of (treg(*res*), treg(*fun*), treg(*arg*))
+# | TINSopr of (treg(*res*), strn(*opr*), list(treg))
+# | TINSfun of (treg(*f00*), tcmp(*body*))
+# | TINSif0 of (treg(*res*), treg(*test*), tcmp(*then*), tcmp(*else*))
+
+class tins:
+    ctag = ""
+    def __str__(self):
+        return ("tins(" + self.ctag + ")")
+# end-of-class(tins)
+
+class tins_mov(tins):
+    def __init__(self, arg1, arg2):
+        self.arg1 = arg1
+        self.arg2 = arg2
+        self.ctag = "TINSmov"
+    def __str__(self):
+        return ("tins_mov(" + str(self.arg1) + ";" + str(self.arg2) + ")")
+
+class tins_opr(tins):
+    def __init__(self, arg1, arg2, arg3):
+        self.arg1 = arg1
+        self.arg2 = arg2
+        self.arg3 = arg3
+        self.ctag = "TINSopr"
+    def __str__(self):
+        return ("tins_opr(" + str(self.arg1) + ";" + str(self.arg2) + ";" + str(self.arg3) + ")")
+
+class tins_app(tins):
+    def __init__(self, arg1, arg2, arg3):
+        self.arg1 = arg1
+        self.arg2 = arg2
+        self.arg3 = arg3
+        self.ctag = "TINSapp"
+    def __str__(self):
+        return ("tins_app(" + str(self.arg1) + ";" + str(self.arg2) + ";" + str(self.arg3) + ")")
+
+class tins_if0(tins):
+    def __init__(self, arg1, arg2, arg3, arg4):
+        self.arg1 = arg1
+        self.arg2 = arg2
+        self.arg3 = arg3
+        self.arg4 = arg4
+        self.ctag = "TINSif0"
+    def __str__(self):
+        return ("tins_if0(" + str(self.arg1) + ";" + str(self.arg2) + ";" + str(self.arg3) + ";" + str(self.arg4) + ")")
+
+# datatype tcmp =
+# | TCMP of (list(tins), treg)
+
+class tcmp:
+    def __init__(inss, treg):
+        self.arg1 = inss; self.arg2 = treg
+    def __str__(self):
+        return ("tcmp(" + "..." + ";" + str(self.treg) + ")")
+# end-of-class(tcmp)
+
+##################################################################
+
+# datatype cenv =
+# | CENVnil of ()
+# | CENVcons of (strn, treg, cenv)
+
+class cenv:
+    ctag = ""
+    def __str__(self):
+        return ("cenv(" + self.ctag + ")")
+# end-of-class(cenv)
+
+class cenv_nil(cenv):
+    def __init__(self):
+        self.ctag = "CENVnil"
+    def __str__(self):
+        return ("CENVnil(" + ")")
+# end-of-class(cenv_nil(cenv))
+
+class cenv_cons(cenv):
+    def __init__(self, arg1, arg2, arg3):
+        self.arg1 = arg1
+        self.arg2 = arg2
+        self.arg3 = arg3
+        self.ctag = "CENVcons"
+    def __str__(self):
+        return ("CENVcons(" + self.arg1 + ";" + str(self.arg2) + ";" + str(self.arg3) + ")")
+# end-of-class(cenv_cons(cenv))
+
+##################################################################
+
+def term_comp00(tm0):
+    return term_comp01(tm0, cenv_nil())
+
+def term_comp01(tm0, env):
+    if (tm0.ctag == "TMint"):
+        ttmp = ttmp_new()
+        tins = tins_mov(ttmp, TVALint(tm0.arg1))
+        return tcmp([tins], ttmp)
+    raise TypeError(tm0) # HX-2025-06-18: should be deadcode!
+
+##################################################################
+# end of [CS391-2025-Summer/lectures/lecture-06-03/lambda3.py]
 ##################################################################

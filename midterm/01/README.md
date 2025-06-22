@@ -19,8 +19,8 @@ In the following file, you can find a solution to the famous
 https://ats-lang.sourceforge.net/DOCUMENT/INT2PROGINATS/HTML/x631.html
 ```
 
-The solution is written in ML-like syntax. Your task for the midterm
-is to _translate_ this solution into LAMBDA, the extended lambda-calculus
+The solution is written in ML-like syntax. Task 1 asks you to
+_translate_ this solution into LAMBDA, the extended lambda-calculus
 described in `assigns/03`:
 
 
@@ -47,7 +47,7 @@ datatype term =
 // HX-2025-06-10:
 // for (let x = t1 in t2), which stands for
 // (lam x. t1)(t2):
-// TMlet of (strn(*x*), term(*t1*), term(*t2))
+| TMlet of (strn(*x*), term(*t1*), term(*t2))
 //
 ```
 
