@@ -9,6 +9,7 @@ CS391 — Summer 2025
 * `finexam.py`: Complete compiler implementation including term extensions, compiler logic, and Python emitter.
 * `README.txt`: This file.
 * `midterm.py`: My midterm solution file with the 8-Queens puzzle lambda-term(used for testing)
+* 'Final Report Veer Agrawal': Final report PDF
 
 
 ### What I Implemented
